@@ -1,8 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { RegisterDto } from './dto/register.dto';
 import bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -32,4 +33,24 @@ export class AuthService {
         }
     }
 
+    async login(loginDto: LoginDto){
+        const user = await this.userService.getUserByEmail(loginDto.email);
+        if(!user){
+            throw new UnauthorizedException('Email or password is incorrect');
+        }
+
+        const match = await bcrypt.compare(loginDto.password, user.password);
+        if(!match){
+            throw new UnauthorizedException('Email or password is incorrect');
+        }
+
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        }
+        return {
+            access_token: await this.jwtService.signAsync(payload),
+        }
+    }
 }

@@ -19,6 +19,7 @@ model User {
   email     String   @unique
   password  String
   role      Role   @default(CASHIER)
+  sales     Sale[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -27,6 +28,56 @@ enum Role {
   ADMIN
   CASHIER
   MANAGER
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  products  Product[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          Int       @id @default(autoincrement())
+  name        String
+  sku         String    @unique
+  description String?
+  price       Decimal   @db.Decimal(10, 2)
+  stock       Int       @default(0)
+  categoryId  Int
+  category    Category  @relation(fields: [categoryId], references: [id])
+  saleItems   SaleItem[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Sale {
+  id             Int       @id @default(autoincrement())
+  invoiceNumber  String    @unique @default(cuid())
+  customerName   String?
+  customerPhone  String?
+  subtotal       Decimal   @db.Decimal(10, 2)
+  taxAmount      Decimal   @db.Decimal(10, 2) @default(0)
+  discountAmount Decimal   @db.Decimal(10, 2) @default(0)
+  totalAmount    Decimal   @db.Decimal(10, 2)
+  paymentMethod  String    // "cash" | "card"
+  soldById       Int?
+  soldBy         User?     @relation(fields: [soldById], references: [id])
+  items          SaleItem[]
+  createdAt      DateTime  @default(now())
+}
+
+model SaleItem {
+  id         Int      @id @default(autoincrement())
+  saleId     Int
+  productId  Int
+  quantity   Int
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  totalPrice Decimal  @db.Decimal(10, 2)
+  sale       Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id])
+  @@unique([saleId, productId])
 }
 
 

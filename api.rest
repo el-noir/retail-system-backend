@@ -1,0 +1,31 @@
+### Register 
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+    "name": "adminuser",
+    "email": "adminuser@example.com",
+    "password": "Adminpass123",
+    "role": "ADMIN"
+}
+
+### Register another admin user
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+    "name": "adminuser2",
+    "email": "adminuser2@example.com",
+    "password": "Adminpass123",
+    "role": "ADMIN"
+}
+
+### Login
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+    "email": "adminuser@example.com",
+    "password": "Adminpass123"
+}
+

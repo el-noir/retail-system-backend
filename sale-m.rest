@@ -1,0 +1,88 @@
+### ================== SALES & BILLING MODULE (by Hassan) ==================
+@baseUrl = http://localhost:3000
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsImVtYWlsIjoiYWRtaW51c2VyQGV4YW1wbGUuY29tIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzY0ODY4Mzg4LCJleHAiOjE3NjQ4NzE5ODh9.sE_XmY2ebSm4J5onnkNJp5ATd0Lq0dqIgPBQLH5TshI
+
+### 1. Login as ADMIN (copy the token!)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "adminuser@example.com",
+  "password": "Adminpass123"
+}
+
+# → Copy the access_token from response and paste in the @token variable above
+
+
+### 2. Create Category
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Snacks & Drinks"
+}
+
+
+### 3. Create Product 1 (Coke)
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Coca Cola 500ml",
+  "sku": "COKE500",
+  "price": 65.00,
+  "stock": 100,
+  "categoryId": 1
+}
+
+
+### 4. Create Product 2 (Lays)
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Lays Classic",
+  "sku": "LAYS001",
+  "price": 50.00,
+  "stock": 80,
+  "categoryId": 1
+}
+
+
+### 5. CREATE A SALE ← FULL POS TRANSACTION (watch stock reduce!)
+POST {{baseUrl}}/sales
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerName": "Ahmed Khan",
+  "customerPhone": "03001234567",
+  "items": [
+    { "productId": 1, "quantity": 1 },
+    { "productId": 2, "quantity": 21 }
+  ],
+  "taxAmount": 34.50,
+  "discountAmount": 20.00,
+  "paymentMethod": "cash"
+}
+
+
+### 6. Check stock reduced automatically
+GET {{baseUrl}}/products/1
+Authorization: Bearer {{token}}
+
+GET {{baseUrl}}/products/2
+Authorization: Bearer {{token}}
+
+
+### 7. Get all sales
+GET {{baseUrl}}/sales
+Authorization: Bearer {{token}}
+
+
+### 8. Get specific sale by invoice number (for printing receipt)
+GET {{baseUrl}}/sales/invoice/cmirpjdee0000v830y7uvtko6
+Authorization: Bearer {{token}}

@@ -1,12 +1,22 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async createProduct(createProductDto: CreateProductDto) {
+
+    const productAlreadyExistsWithName = await this.prismaService.product.findFirst({
+      where: { name: createProductDto.name },
+    });
+
+    if (productAlreadyExistsWithName) {
+      throw new BadRequestException(`Product with name ${createProductDto.name} already exists`);
+    }
+
     // Validate category exists
     const category = await this.prismaService.category.findUnique({
       where: { id: createProductDto.categoryId },
@@ -15,6 +25,8 @@ export class ProductService {
     if (!category) {
       throw new NotFoundException(`Category with ID ${createProductDto.categoryId} not found`);
     }
+
+
 
     return this.prismaService.product.create({
       data: createProductDto,

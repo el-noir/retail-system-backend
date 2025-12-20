@@ -8,6 +8,7 @@ import { UserModule } from './user/user.module';
 import { SalesModule } from './sales/sales.module';
 import { ProductModule } from './product/product.module';
 import { CategoryModule } from './category/category.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CategoryModule } from './category/category.module';
     SalesModule,
     ProductModule,
     CategoryModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

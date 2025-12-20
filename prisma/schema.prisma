@@ -80,4 +80,13 @@ model SaleItem {
   @@unique([saleId, productId])
 }
 
+model Otp {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  code      String
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
 

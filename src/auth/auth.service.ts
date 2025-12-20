@@ -4,10 +4,16 @@ import { RegisterDto } from './dto/register.dto';
 import bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class AuthService {
-    constructor(private readonly userService: UserService, private readonly jwtService: JwtService) {}
+    constructor(
+        private readonly userService: UserService,
+        private readonly jwtService: JwtService,
+        private readonly emailService: EmailService,
+    ) {}
+
     async register(registerDto: RegisterDto){
         const user = await this.userService.getUserByEmail(registerDto.email);
 
@@ -22,6 +28,9 @@ export class AuthService {
             password: hashedPassword,
         })
 
+        // Send OTP email
+        await this.emailService.sendOtpAndStore(registerDto.email);
+
         const payload = {
             sub: newUser.id,
             email: newUser.email,
@@ -30,6 +39,7 @@ export class AuthService {
 
         return {
             access_token: await this.jwtService.signAsync(payload),
+            requiresOtpVerification: true,
         }
     }
 

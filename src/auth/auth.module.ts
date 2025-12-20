@@ -7,11 +7,13 @@ import { JwtModule } from '@nestjs/jwt';
 import {PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthGuard } from './guards/auth.gaurd';
+import { EmailModule } from 'src/email/email.module';
 
 @Module({
   imports: [UserModule,
     ConfigModule,
     PassportModule,
+    EmailModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

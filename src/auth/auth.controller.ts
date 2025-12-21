@@ -1,9 +1,10 @@
-import { Body, Controller, Post, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Post, BadRequestException, UseGuards, Request } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { RegisterDto } from './dto/register.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { EmailService } from 'src/email/email.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -14,6 +15,7 @@ export class AuthController {
 
     @Post('register')
     async register(@Body() registerDto: RegisterDto) {
+        console.log('Registration attempt received in controller');
         return this.authService.register(registerDto);
     }
 
@@ -37,7 +39,27 @@ export class AuthController {
             throw new BadRequestException('Invalid or expired OTP');
         }
 
-        // OTP verified successfully - in production, you could mark user as verified
-        return { message: 'OTP verified successfully' };
+        // OTP verified successfully - return success message
+        return { message: 'OTP verified successfully. Please complete registration.' };
+    }
+
+    @Post('finalize-registration')
+    @UseGuards(JwtAuthGuard)
+    async finalizeRegistration(@Request() req: any) {
+        const user = req.user;
+
+        // Verify this is a pending registration token
+        if (!user.isRegistrationPending) {
+            throw new BadRequestException('Invalid registration request');
+        }
+
+        // Verify OTP was actually verified before allowing finalization
+        // The frontend should only call this after successful OTP verification
+        return this.authService.finalizeRegistration(
+            user.email,
+            user.name,
+            user.password,
+            user.role
+        );
     }
 }

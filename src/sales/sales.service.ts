@@ -2,10 +2,14 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma.service';
 import { CreateSaleDto, CreateSaleItemDto } from './dto/create-sale.dto';
 import { Decimal } from '@prisma/client/runtime/library';
+import { InventoryService } from 'src/inventory/inventory.service';
 
 @Injectable()
 export class SalesService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly inventoryService: InventoryService,
+  ) {}
 
   async createSale(createSaleDto: CreateSaleDto, soldById?: number) {
     const { items, customerName, customerPhone, taxAmount = 0, discountAmount = 0, paymentMethod } = createSaleDto;
@@ -89,16 +93,13 @@ export class SalesService {
         },
       });
 
-      // Deduct stock atomically
+      // Deduct stock via Inventory, inside the same transaction, with logging
       for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-          },
-        });
+        await this.inventoryService.stockOutUsingTx(
+          tx,
+          { productId: item.productId, quantity: item.quantity, reason: `Sale ${sale.invoiceNumber}` },
+          soldById,
+        );
       }
 
       return sale;

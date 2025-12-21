@@ -37,16 +37,30 @@ export class ProductService {
   }
 
   async getProducts(limit = 10, offset = 0) {
-    return this.prismaService.product.findMany({
-      take: limit,
-      skip: offset,
-      include: {
-        category: true,
+    const [items, total] = await this.prismaService.$transaction([
+      this.prismaService.product.findMany({
+        take: limit,
+        skip: offset,
+        include: {
+          category: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prismaService.product.count(),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        total,
+        limit,
+        offset,
+        pages: Math.ceil(total / Math.max(1, limit)),
+        currentPage: Math.floor(offset / Math.max(1, limit)) + 1,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    };
   }
 
   async getProductById(id: number) {

@@ -3,10 +3,14 @@ import { AppModule } from './app.module';
 import { SwaggerModule } from '@nestjs/swagger/dist/swagger-module';
 import { DocumentBuilder } from '@nestjs/swagger/dist/document-builder';
 import { ValidationPipe } from '@nestjs/common';
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { 
+    rawBody: true 
+  });
+  
   app.enableCors(
     { origin: '*' }
   );

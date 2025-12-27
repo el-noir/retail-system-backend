@@ -48,11 +48,14 @@ model Product {
   description   String?
   price         Decimal        @db.Decimal(10, 2)
   stock         Int            @default(0)
+  reorderLevel  Int?           @default(10) // Trigger reorder when stock falls below this
+  reorderQty    Int?           @default(50) // Suggested reorder quantity
   categoryId    Int
   category      Category       @relation(fields: [categoryId], references: [id])
   saleItems     SaleItem[]
   stockLogs     StockLog[]
   purchaseItems PurchaseItem[]
+  supplierProducts SupplierProduct[] // Suppliers who provide this product
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -111,14 +114,23 @@ model StockLog {
 // ============ PROCUREMENT / RESTOCKING SYSTEM ============
 
 model Supplier {
-  id             String          @id @default(uuid())
+  id             String               @id @default(uuid())
   name           String
   email          String?
   phone          String?
   address        String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  contactPerson  String?
+  taxId          String?
+  paymentTerms   String?              // e.g., "Net 30", "Due on receipt"
+  leadTimeDays   Int?                 // Average delivery time in days
+  minOrderAmount Decimal?             @db.Decimal(10, 2)
+  isActive       Boolean              @default(true)
+  rating         Int?                 // 1-5 star rating
+  notes          String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
   purchaseOrders PurchaseOrder[]
+  supplierProducts SupplierProduct[]  // Products this supplier can provide
 }
 
 enum PurchaseStatus {
@@ -159,7 +171,32 @@ model PurchaseItem {
   totalPrice      Decimal       @db.Decimal(10, 2)
   receivedQty     Int           @default(0) // Track partial deliveries
   createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  updatedAt          DateTime       @updatedAt
+}
+
+// ============ SUPPLIER PRODUCT CATALOG ============
+
+model SupplierProduct {
+  id                String    @id @default(uuid())
+  supplierId        String
+  supplier          Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productId         Int
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplierSku       String?   // Supplier's SKU for this product
+  supplierPrice     Decimal   @db.Decimal(10, 2) // Cost price from supplier
+  isAvailable       Boolean   @default(true)
+  stockQuantity     Int?      // Supplier's current stock (if tracked)
+  minOrderQty       Int       @default(1)
+  leadTimeDays      Int?      // Specific lead time for this product
+  isPrimarySupplier Boolean   @default(false) // Mark as preferred supplier
+  lastOrderDate     DateTime?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@unique([supplierId, productId])
+  @@index([productId])
+  @@index([supplierId])
 }
 
 enum PaymentStatus {

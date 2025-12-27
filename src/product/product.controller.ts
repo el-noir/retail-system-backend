@@ -1,15 +1,19 @@
-import { Controller, Post, Get, Param, Body, UseGuards, Delete, Patch, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, UseGuards, Delete, Patch, ParseIntPipe, Query, Inject } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { RolesGuard } from 'src/auth/guards/roles.gaurd';
+import { SupplierService } from 'src/supplier/supplier.service';
 
 @Controller('products')
 @UseGuards(JwtAuthGuard)
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly supplierService: SupplierService,
+  ) {}
 
   @Post()
   @Roles('ADMIN')
@@ -57,5 +61,12 @@ export class ProductController {
   @UseGuards(RolesGuard)
   async getProductsByCategory(@Param('categoryId', ParseIntPipe) categoryId: number) {
     return this.productService.getProductsByCategory(categoryId);
+  }
+
+  @Get(':id/suppliers')
+  @Roles('ADMIN', 'MANAGER', 'PROCUREMENT')
+  @UseGuards(RolesGuard)
+  async getProductSuppliers(@Param('id', ParseIntPipe) id: number) {
+    return this.supplierService.getProductSuppliers(id);
   }
 }

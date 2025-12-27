@@ -12,6 +12,7 @@ import {
 import { SupplierService } from './supplier.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import { CreateSupplierProductDto, UpdateSupplierProductDto, BulkAddProductsDto } from './dto/supplier-product.dto';
 import { AuthGuard } from 'src/auth/guards/auth.gaurd';
 import { RolesGuard } from 'src/auth/guards/roles.gaurd';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -53,5 +54,46 @@ export class SupplierController {
   @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.supplierService.remove(id);
+  }
+
+  // ============ SUPPLIER PRODUCT ENDPOINTS ============
+
+  @Post('products')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PROCUREMENT)
+  addProductToSupplier(@Body() dto: CreateSupplierProductDto) {
+    return this.supplierService.addProductToSupplier(dto);
+  }
+
+  @Post('products/bulk')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PROCUREMENT)
+  bulkAddProducts(@Body() dto: BulkAddProductsDto) {
+    return this.supplierService.bulkAddProducts(dto);
+  }
+
+  @Get(':supplierId/products')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PROCUREMENT)
+  getSupplierProducts(@Param('supplierId') supplierId: string) {
+    return this.supplierService.getSupplierProducts(supplierId);
+  }
+
+  @Patch('products/:id')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PROCUREMENT)
+  updateSupplierProduct(
+    @Param('id') id: string,
+    @Body() dto: UpdateSupplierProductDto,
+  ) {
+    return this.supplierService.updateSupplierProduct(id, dto);
+  }
+
+  @Delete('products/:id')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PROCUREMENT)
+  removeProductFromSupplier(@Param('id') id: string) {
+    return this.supplierService.removeProductFromSupplier(id);
+  }
+
+  @Get('recommendations/low-stock')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.PROCUREMENT)
+  getLowStockRecommendations() {
+    return this.supplierService.getLowStockRecommendations();
   }
 }

@@ -62,6 +62,45 @@ async function main() {
   console.log('  email   :', adminUser.email)
   console.log('  password:', adminPassword)
 
+  // Seed suppliers
+  const suppliers = await Promise.all([
+    prisma.supplier.upsert({
+      where: { id: 'supplier-1' },
+      update: {},
+      create: {
+        id: 'supplier-1',
+        name: 'Tech Distributors Inc.',
+        email: 'sales@techdistributors.com',
+        phone: '+1-555-0100',
+        address: '123 Tech Park, Silicon Valley, CA 94025',
+      },
+    }),
+    prisma.supplier.upsert({
+      where: { id: 'supplier-2' },
+      update: {},
+      create: {
+        id: 'supplier-2',
+        name: 'Global Textiles Co.',
+        email: 'orders@globaltextiles.com',
+        phone: '+1-555-0200',
+        address: '456 Fashion Ave, New York, NY 10001',
+      },
+    }),
+    prisma.supplier.upsert({
+      where: { id: 'supplier-3' },
+      update: {},
+      create: {
+        id: 'supplier-3',
+        name: 'Fresh Foods Wholesale',
+        email: 'wholesale@freshfoods.com',
+        phone: '+1-555-0300',
+        address: '789 Market St, Seattle, WA 98101',
+      },
+    }),
+  ])
+
+  console.log('✓ Suppliers seeded:', suppliers.length)
+
   console.log('✓ Database seeded successfully')
 }
 

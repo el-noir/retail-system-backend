@@ -1,0 +1,122 @@
+### ============ PROCUREMENT SYSTEM TESTS ============
+@baseUrl = http://localhost:9000
+@token = YOUR_JWT_TOKEN_HERE
+
+### ============ SUPPLIERS ============
+
+### Get all suppliers
+GET {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+
+### Get supplier by ID
+GET {{baseUrl}}/suppliers/supplier-1
+Authorization: Bearer {{token}}
+
+### Create supplier
+POST {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Test Supplier Inc.",
+  "email": "test@supplier.com",
+  "phone": "+1-555-9999",
+  "address": "123 Test St, Test City, TS 12345"
+}
+
+### Update supplier
+PATCH {{baseUrl}}/suppliers/supplier-1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "phone": "+1-555-0000"
+}
+
+### ============ PURCHASE ORDERS ============
+
+### Get all purchase orders
+GET {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+
+### Get purchase orders by status
+GET {{baseUrl}}/purchase-orders?status=DRAFT
+Authorization: Bearer {{token}}
+
+### Get purchase order by ID
+GET {{baseUrl}}/purchase-orders/YOUR_ORDER_ID
+Authorization: Bearer {{token}}
+
+### Create purchase order
+POST {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplierId": "supplier-1",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 50,
+      "unitPrice": 25.00
+    },
+    {
+      "productId": 2,
+      "quantity": 30,
+      "unitPrice": 15.50
+    }
+  ],
+  "notes": "Urgent restock for holiday season"
+}
+
+### Approve purchase order
+PATCH {{baseUrl}}/purchase-orders/YOUR_ORDER_ID/approve
+Authorization: Bearer {{token}}
+
+### Mark as paid (manual - use after Stripe payment)
+PATCH {{baseUrl}}/purchase-orders/YOUR_ORDER_ID/mark-paid
+Authorization: Bearer {{token}}
+
+### Receive goods for an item
+PATCH {{baseUrl}}/purchase-orders/YOUR_ORDER_ID/items/YOUR_ITEM_ID/receive
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "receivedQty": 50
+}
+
+### Close purchase order
+PATCH {{baseUrl}}/purchase-orders/YOUR_ORDER_ID/close
+Authorization: Bearer {{token}}
+
+### Cancel purchase order
+PATCH {{baseUrl}}/purchase-orders/YOUR_ORDER_ID/cancel
+Authorization: Bearer {{token}}
+
+### Get purchase order statistics
+GET {{baseUrl}}/purchase-orders/statistics
+Authorization: Bearer {{token}}
+
+### ============ PAYMENTS ============
+
+### Create payment intent for purchase order
+POST {{baseUrl}}/payments/create-intent
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "purchaseOrderId": "YOUR_ORDER_ID"
+}
+
+### Get payments for purchase order
+GET {{baseUrl}}/payments/purchase-order/YOUR_ORDER_ID
+Authorization: Bearer {{token}}
+
+### Get payment by ID
+GET {{baseUrl}}/payments/YOUR_PAYMENT_ID
+Authorization: Bearer {{token}}
+
+### Stripe Webhook (called by Stripe - no manual test)
+### POST {{baseUrl}}/payments/webhook
+### Stripe-Signature: whsec_...

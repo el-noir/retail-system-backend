@@ -10,6 +10,9 @@ import { ProductModule } from './product/product.module';
 import { CategoryModule } from './category/category.module';
 import { EmailModule } from './email/email.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { SupplierModule } from './supplier/supplier.module';
+import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -23,6 +26,9 @@ import { InventoryModule } from './inventory/inventory.module';
     CategoryModule,
     EmailModule,
     InventoryModule,
+    SupplierModule,
+    PurchaseOrderModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

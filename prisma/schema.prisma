@@ -14,21 +14,23 @@ datasource db {
 }
 
 model User {
-  id        Int     @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role   @default(CASHIER)
-  sales     Sale[]
-  stockLogs StockLog[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                     Int             @id @default(autoincrement())
+  name                   String
+  email                  String          @unique
+  password               String
+  role                   Role            @default(CASHIER)
+  sales                  Sale[]
+  stockLogs              StockLog[]
+  createdPurchaseOrders  PurchaseOrder[] @relation("CreatedPurchaseOrders")
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
 }
 
 enum Role {
   ADMIN
   CASHIER
   MANAGER
+  PROCUREMENT
 }
 
 model Category {
@@ -40,18 +42,19 @@ model Category {
 }
 
 model Product {
-  id          Int       @id @default(autoincrement())
-  name        String
-  sku         String    @unique
-  description String?
-  price       Decimal   @db.Decimal(10, 2)
-  stock       Int       @default(0)
-  categoryId  Int
-  category    Category  @relation(fields: [categoryId], references: [id])
-  saleItems   SaleItem[]
-  stockLogs   StockLog[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            Int            @id @default(autoincrement())
+  name          String
+  sku           String         @unique
+  description   String?
+  price         Decimal        @db.Decimal(10, 2)
+  stock         Int            @default(0)
+  categoryId    Int
+  category      Category       @relation(fields: [categoryId], references: [id])
+  saleItems     SaleItem[]
+  stockLogs     StockLog[]
+  purchaseItems PurchaseItem[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Sale {
@@ -105,4 +108,78 @@ model StockLog {
   createdAt     DateTime @default(now())
 }
 
+// ============ PROCUREMENT / RESTOCKING SYSTEM ============
 
+model Supplier {
+  id             String          @id @default(uuid())
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  purchaseOrders PurchaseOrder[]
+}
+
+enum PurchaseStatus {
+  DRAFT
+  APPROVED
+  PAID
+  RECEIVED
+  CLOSED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id          String          @id @default(uuid())
+  supplierId  String
+  supplier    Supplier        @relation(fields: [supplierId], references: [id])
+  totalAmount Decimal         @db.Decimal(10, 2)
+  status      PurchaseStatus  @default(DRAFT)
+  notes       String?
+  createdById Int?
+  createdBy   User?           @relation("CreatedPurchaseOrders", fields: [createdById], references: [id])
+  approvedAt  DateTime?
+  paidAt      DateTime?
+  receivedAt  DateTime?
+  items       PurchaseItem[]
+  payments    Payment[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model PurchaseItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       Int
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Int
+  unitPrice       Decimal       @db.Decimal(10, 2)
+  totalPrice      Decimal       @db.Decimal(10, 2)
+  receivedQty     Int           @default(0) // Track partial deliveries
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id                 String         @id @default(uuid())
+  purchaseOrderId    String
+  purchaseOrder      PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
+  amount             Decimal        @db.Decimal(10, 2)
+  status             PaymentStatus  @default(PENDING)
+  stripePaymentId    String?        @unique // Stripe PaymentIntent ID
+  stripeClientSecret String?
+  paymentMethod      String?        // e.g., "card", "bank_transfer"
+  metadata           Json?          // Additional payment data
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+}

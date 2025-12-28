@@ -46,7 +46,8 @@ model Product {
   name          String
   sku           String         @unique
   description   String?
-  price         Decimal        @db.Decimal(10, 2)
+  costPrice     Decimal        @db.Decimal(10, 2) @default(0) // Cost from supplier
+  price         Decimal        @db.Decimal(10, 2) // Selling price to customers
   stock         Int            @default(0)
   reorderLevel  Int?           @default(10) // Trigger reorder when stock falls below this
   reorderQty    Int?           @default(50) // Suggested reorder quantity

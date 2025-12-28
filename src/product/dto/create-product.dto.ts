@@ -11,6 +11,11 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  costPrice?: number = 0;
+
   @IsNumber()
   @IsPositive()
   price: number;

@@ -236,9 +236,13 @@ export class PurchaseOrderService {
     const previousStock = product.stock;
     const newStock = previousStock + receiveDto.receivedQty;
 
+    // Update product stock AND cost price based on supplier unit price
     await this.prismaService.product.update({
       where: { id: item.productId },
-      data: { stock: newStock },
+      data: { 
+        stock: newStock,
+        costPrice: item.unitPrice, // Update cost price to match supplier price
+      },
     });
 
     // Log stock movement

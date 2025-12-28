@@ -49,6 +49,13 @@ export class SalesService {
         const unitPrice = product.price;
         const totalPrice = unitPrice.mul(item.quantity);
 
+        // Validate that selling price is not below cost price
+        if (unitPrice.lt(product.costPrice)) {
+          throw new BadRequestException(
+            `Cannot sell "${product.name}" at $${unitPrice} because it's below cost price of $${product.costPrice}`,
+          );
+        }
+
         subtotal = subtotal.add(totalPrice);
         saleItemsData.push({
           productId: item.productId,

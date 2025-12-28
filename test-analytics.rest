@@ -1,0 +1,19 @@
+### Test Analytics Endpoints with JWT Token
+@baseUrl = http://localhost:9000
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsImVtYWlsIjoiYWRtaW5Ac3RvcmUuY29tIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzY2OTM3MDYwLCJleHAiOjE3NjY5NDA2NjB9.WvC_9EE9MYpG01LBWpbfjYO5_qh0xed9Exl8-jSTcjY
+
+### Test Dashboard (should work)
+GET {{baseUrl}}/analytics/dashboard
+Authorization: Bearer {{token}}
+
+### Test Sales Analytics (should work)
+GET {{baseUrl}}/analytics/sales?startDate=2025-11-28&endDate=2025-12-28
+Authorization: Bearer {{token}}
+
+### Test Product Analytics with ID 4
+GET {{baseUrl}}/analytics/product/4?startDate=2025-11-28&endDate=2025-12-28
+Authorization: Bearer {{token}}
+
+### Test Product Analytics with ID 1
+GET {{baseUrl}}/analytics/product/1?startDate=2025-11-28&endDate=2025-12-28
+Authorization: Bearer {{token}}

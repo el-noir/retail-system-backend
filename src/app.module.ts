@@ -13,6 +13,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { PaymentModule } from './payment/payment.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { PaymentModule } from './payment/payment.module';
     SupplierModule,
     PurchaseOrderModule,
     PaymentModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client';
 export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
-  async getSalesAnalytics(startDate?: string, endDate?: string) {
+  async getSalesAnalytics(startDate?: string, endDate?: string, categoryId?: number) {
     const dateFilter: Prisma.SaleWhereInput = {};
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -16,6 +16,17 @@ export class AnalyticsService {
       dateFilter.createdAt = {
         gte: start,
         lte: end,
+      };
+    }
+
+    // Add category filter if provided
+    if (categoryId) {
+      dateFilter.items = {
+        some: {
+          product: {
+            categoryId: categoryId,
+          },
+        },
       };
     }
 
@@ -109,7 +120,7 @@ export class AnalyticsService {
     };
   }
 
-  async getPurchaseAnalytics(startDate?: string, endDate?: string) {
+  async getPurchaseAnalytics(startDate?: string, endDate?: string, categoryId?: number) {
     const dateFilter: Prisma.PurchaseOrderWhereInput = {};
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -119,6 +130,28 @@ export class AnalyticsService {
       dateFilter.createdAt = {
         gte: start,
         lte: end,
+      };
+    }
+
+    // Add category filter if provided
+    if (categoryId) {
+      dateFilter.items = {
+        some: {
+          product: {
+            categoryId: categoryId,
+          },
+        },
+      };
+    }
+
+    // Add category filter if provided
+    if (categoryId) {
+      dateFilter.items = {
+        some: {
+          product: {
+            categoryId: categoryId,
+          },
+        },
       };
     }
 
@@ -207,8 +240,14 @@ export class AnalyticsService {
     };
   }
 
-  async getInventoryAnalytics() {
+  async getInventoryAnalytics(categoryId?: number) {
+    const whereCondition: Prisma.ProductWhereInput = {};
+    if (categoryId) {
+      whereCondition.categoryId = categoryId;
+    }
+
     const products = await this.prisma.product.findMany({
+      where: whereCondition,
       include: {
         category: true,
       },
@@ -221,8 +260,16 @@ export class AnalyticsService {
     const lowStockCount = products.filter(p => p.stock <= (p.reorderLevel || 10)).length;
 
     // Get sales data to determine top selling products
+    const salesDataWhere: Prisma.SaleItemWhereInput = {};
+    if (categoryId) {
+      salesDataWhere.product = {
+        categoryId: categoryId,
+      };
+    }
+
     const salesData = await this.prisma.saleItem.groupBy({
       by: ['productId'],
+      where: salesDataWhere,
       _sum: {
         quantity: true,
       },
@@ -272,7 +319,7 @@ export class AnalyticsService {
     };
   }
 
-  async getProfitAnalytics(startDate?: string, endDate?: string) {
+  async getProfitAnalytics(startDate?: string, endDate?: string, categoryId?: number) {
     const dateFilter: Prisma.SaleWhereInput = {};
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -282,6 +329,28 @@ export class AnalyticsService {
       dateFilter.createdAt = {
         gte: start,
         lte: end,
+      };
+    }
+
+    // Add category filter if provided
+    if (categoryId) {
+      dateFilter.items = {
+        some: {
+          product: {
+            categoryId: categoryId,
+          },
+        },
+      };
+    }
+
+    // Add category filter if provided
+    if (categoryId) {
+      dateFilter.items = {
+        some: {
+          product: {
+            categoryId: categoryId,
+          },
+        },
       };
     }
 
@@ -303,7 +372,10 @@ export class AnalyticsService {
     sales.forEach(sale => {
       sale.items.forEach(item => {
         const revenue = item.totalPrice.toNumber();
-        const cost = item.quantity * (item.product.costPrice?.toNumber() || 0);
+        // Use actual cost from sale item if available (new system), otherwise fallback to product cost price (old data)
+        const cost = item.totalCost 
+          ? item.totalCost.toNumber() 
+          : item.quantity * (item.product.costPrice?.toNumber() || 0);
         
         totalRevenue += revenue;
         totalCost += cost;
@@ -450,7 +522,16 @@ export class AnalyticsService {
     // Calculate sales metrics
     const totalUnitsSold = saleItems.reduce((sum, item) => sum + item.quantity, 0);
     const totalRevenue = saleItems.reduce((sum, item) => sum + item.totalPrice.toNumber(), 0);
-    const totalCost = totalUnitsSold * (product.costPrice?.toNumber() || 0);
+    // Calculate totals from sale items - use actual cost if available
+    let totalCost = 0;
+    saleItems.forEach(item => {
+      if (item.totalCost) {
+        totalCost += item.totalCost.toNumber();
+      } else {
+        // Fallback for old data without cost tracking
+        totalCost += item.quantity * (product.costPrice?.toNumber() || 0);
+      }
+    });
     const grossProfit = totalRevenue - totalCost;
     const profitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
 
@@ -538,8 +619,7 @@ export class AnalyticsService {
       type: log.type,
       quantity: log.quantity,
       reason: log.reason,
-      previousStock: log.previousStock,
-      newStock: log.newStock,
+      unitCost: log.unitCost?.toNumber() || null,
       createdBy: log.createdByUser?.name || 'System',
       createdAt: log.createdAt.toISOString(),
     }));
@@ -569,7 +649,10 @@ export class AnalyticsService {
         name: product.name,
         sku: product.sku,
         description: product.description,
-        category: product.category?.name || 'Uncategorized',
+        category: {
+          id: product.category?.id || null,
+          name: product.category?.name || 'Uncategorized',
+        },
         currentStock: product.stock,
         costPrice: product.costPrice.toNumber(),
         sellingPrice: product.price.toNumber(),
@@ -595,6 +678,109 @@ export class AnalyticsService {
       restockByDate,
       stockMovements,
       suppliers: supplierList,
+    };
+  }
+
+  async getCategories() {
+    const categories = await this.prisma.category.findMany({
+      include: {
+        _count: {
+          select: {
+            products: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    return categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      productCount: category._count.products,
+    }));
+  }
+
+  async getCategoryAnalytics(categoryId: number, startDate?: string, endDate?: string) {
+    // Get category details
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+      include: {
+        _count: {
+          select: {
+            products: true,
+          },
+        },
+      },
+    });
+
+    if (!category) {
+      throw new Error('Category not found');
+    }
+
+    const dateFilter: any = {};
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      dateFilter.createdAt = {
+        gte: start,
+        lte: end,
+      };
+    }
+
+    // Get sales analytics for this category
+    const salesAnalytics = await this.getSalesAnalytics(startDate, endDate, categoryId);
+    
+    // Get inventory analytics for this category
+    const inventoryAnalytics = await this.getInventoryAnalytics(categoryId);
+    
+    // Get profit analytics for this category
+    const profitAnalytics = await this.getProfitAnalytics(startDate, endDate, categoryId);
+
+    // Get purchase analytics for this category
+    const purchaseAnalytics = await this.getPurchaseAnalytics(startDate, endDate, categoryId);
+
+    // Get category-specific products performance
+    const products = await this.prisma.product.findMany({
+      where: { categoryId },
+      include: {
+        _count: {
+          select: {
+            saleItems: {
+              where: {
+                sale: dateFilter,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const categoryProducts = products.map(product => ({
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      currentStock: product.stock,
+      price: product.price.toNumber(),
+      costPrice: product.costPrice?.toNumber() || 0,
+      salesCount: product._count.saleItems,
+      stockValue: product.stock * product.price.toNumber(),
+    }));
+
+    return {
+      category: {
+        id: category.id,
+        name: category.name,
+        productCount: category._count.products,
+      },
+      salesAnalytics,
+      inventoryAnalytics,
+      profitAnalytics,
+      purchaseAnalytics,
+      products: categoryProducts,
     };
   }
 }

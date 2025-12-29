@@ -11,34 +11,59 @@ export class AnalyticsController {
   async getSalesAnalytics(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('categoryId') categoryId?: string,
   ) {
-    return this.analyticsService.getSalesAnalytics(startDate, endDate);
+    const categoryIdNum = categoryId ? parseInt(categoryId, 10) : undefined;
+    return this.analyticsService.getSalesAnalytics(startDate, endDate, categoryIdNum);
   }
 
   @Get('purchases')
   async getPurchaseAnalytics(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('categoryId') categoryId?: string,
   ) {
-    return this.analyticsService.getPurchaseAnalytics(startDate, endDate);
+    const categoryIdNum = categoryId ? parseInt(categoryId, 10) : undefined;
+    return this.analyticsService.getPurchaseAnalytics(startDate, endDate, categoryIdNum);
   }
 
   @Get('inventory')
-  async getInventoryAnalytics() {
-    return this.analyticsService.getInventoryAnalytics();
+  async getInventoryAnalytics(@Query('categoryId') categoryId?: string) {
+    const categoryIdNum = categoryId ? parseInt(categoryId, 10) : undefined;
+    return this.analyticsService.getInventoryAnalytics(categoryIdNum);
   }
 
   @Get('profit')
   async getProfitAnalytics(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('categoryId') categoryId?: string,
   ) {
-    return this.analyticsService.getProfitAnalytics(startDate, endDate);
+    const categoryIdNum = categoryId ? parseInt(categoryId, 10) : undefined;
+    return this.analyticsService.getProfitAnalytics(startDate, endDate, categoryIdNum);
   }
 
   @Get('dashboard')
   async getDashboardSummary() {
     return this.analyticsService.getDashboardSummary();
+  }
+
+  @Get('categories')
+  async getCategories() {
+    return this.analyticsService.getCategories();
+  }
+
+  @Get('category/:id')
+  async getCategoryAnalytics(
+    @Param('id') id: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const categoryId = parseInt(id, 10);
+    if (!categoryId || isNaN(categoryId)) {
+      throw new Error('Invalid category ID');
+    }
+    return this.analyticsService.getCategoryAnalytics(categoryId, startDate, endDate);
   }
 
   @Get('product/:id')

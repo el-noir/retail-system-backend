@@ -46,7 +46,7 @@ model Product {
   name          String
   sku           String         @unique
   description   String?
-  costPrice     Decimal        @db.Decimal(10, 2) @default(0) // Cost from supplier
+  costPrice     Decimal        @db.Decimal(10, 2) @default(0) // Weighted average cost (auto-calculated)
   price         Decimal        @db.Decimal(10, 2) // Selling price to customers
   stock         Int            @default(0)
   reorderLevel  Int?           @default(10) // Trigger reorder when stock falls below this
@@ -57,6 +57,7 @@ model Product {
   stockLogs     StockLog[]
   purchaseItems PurchaseItem[]
   supplierProducts SupplierProduct[] // Suppliers who provide this product
+  inventoryBatches InventoryBatch[] // Track inventory by purchase batch
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -82,8 +83,10 @@ model SaleItem {
   saleId     Int
   productId  Int
   quantity   Int
-  unitPrice  Decimal  @db.Decimal(10, 2)
-  totalPrice Decimal  @db.Decimal(10, 2)
+  unitPrice  Decimal  @db.Decimal(10, 2) // Selling price per unit
+  unitCost   Decimal  @db.Decimal(10, 2) @default(0) // Actual cost per unit at time of sale
+  totalPrice Decimal  @db.Decimal(10, 2) // Total selling price
+  totalCost  Decimal  @db.Decimal(10, 2) @default(0) // Total cost (for profit calculation)
   sale       Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [productId], references: [id])
   @@unique([saleId, productId])
@@ -105,11 +108,33 @@ model StockLog {
   type          String   // "in" | "out" | "damaged" | "adjustment"
   quantity      Int
   reason        String?  // Optional: reason for stock change
-  previousStock Int      // Stock before this change
-  newStock      Int      // Stock after this change
+  unitCost      Decimal? @db.Decimal(10, 2) // Cost per unit for this transaction
   createdBy     Int?     // User ID who made the change
   createdByUser User?    @relation(fields: [createdBy], references: [id])
   createdAt     DateTime @default(now())
+}
+
+// ============ INVENTORY BATCH TRACKING ============
+// Track inventory purchases in batches to support FIFO/Weighted Average costing
+
+model InventoryBatch {
+  id              Int           @id @default(autoincrement())
+  productId       Int
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  purchaseOrderId String?       // Link to purchase order if applicable
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  quantityReceived Int          // Initial quantity received
+  quantityRemaining Int         // Current quantity remaining in this batch
+  unitCost        Decimal       @db.Decimal(10, 2) // Cost per unit for this batch
+  receivedAt      DateTime      @default(now())
+  expiresAt       DateTime?     // Optional: expiration date for perishable items
+  batchNumber     String?       // Optional: batch/lot number from supplier
+  supplierId      String?       // Which supplier this batch came from
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([productId, quantityRemaining])
+  @@index([productId, receivedAt])
 }
 
 // ============ PROCUREMENT / RESTOCKING SYSTEM ============
@@ -147,8 +172,9 @@ model PurchaseOrder {
   id          String          @id @default(uuid())
   supplierId  String
   supplier    Supplier        @relation(fields: [supplierId], references: [id])
-  totalAmount Decimal         @db.Decimal(10, 2)
-  status      PurchaseStatus  @default(DRAFT)
+  status      String          @default("DRAFT")
+  totalAmount Decimal         @default(0)
+  inventoryBatches InventoryBatch[] // Link to inventory batches created from this purchase
   notes       String?
   createdById Int?
   createdBy   User?           @relation("CreatedPurchaseOrders", fields: [createdById], references: [id])
@@ -172,7 +198,7 @@ model PurchaseItem {
   totalPrice      Decimal       @db.Decimal(10, 2)
   receivedQty     Int           @default(0) // Track partial deliveries
   createdAt       DateTime      @default(now())
-  updatedAt          DateTime       @updatedAt
+  updatedAt       DateTime      @updatedAt
 }
 
 // ============ SUPPLIER PRODUCT CATALOG ============

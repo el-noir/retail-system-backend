@@ -3,10 +3,14 @@ import { PrismaService } from 'src/prisma.service';
 import { Prisma } from '@prisma/client';
 import { StockInDto } from './dto/stock-in.dto';
 import { StockOutDto } from './dto/stock-out.dto';
+import { InventoryCostingService } from './inventory-costing.service';
 
 @Injectable()
 export class InventoryService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly costingService: InventoryCostingService,
+  ) {}
 
   // ============ STOCK OPERATIONS ============
 
@@ -22,13 +26,19 @@ export class InventoryService {
       throw new NotFoundException('Product not found');
     }
 
-    const previousStock = product.stock;
-    const newStock = previousStock + quantity;
+    const unitCost = product.costPrice.toNumber() || 0;
 
     // Update product stock
     const updatedProduct = await this.prismaService.product.update({
       where: { id: productId },
-      data: { stock: newStock },
+      data: { stock: { increment: quantity } },
+    });
+
+    // Create inventory batch for cost tracking
+    await this.costingService.addInventoryBatch({
+      productId,
+      quantity,
+      unitCost,
     });
 
     // Log stock movement
@@ -38,8 +48,7 @@ export class InventoryService {
         type: 'in',
         quantity,
         reason: reason || 'Stock replenishment',
-        previousStock,
-        newStock,
+        unitCost,
         createdBy: userId,
       },
       include: {
@@ -73,13 +82,10 @@ export class InventoryService {
       );
     }
 
-    const previousStock = product.stock;
-    const newStock = previousStock - quantity;
-
     // Update product stock
     const updatedProduct = await this.prismaService.product.update({
       where: { id: productId },
-      data: { stock: newStock },
+      data: { stock: { decrement: quantity } },
     });
 
     // Log stock movement
@@ -89,8 +95,6 @@ export class InventoryService {
         type: 'out',
         quantity,
         reason: reason || 'Manual stock reduction',
-        previousStock,
-        newStock,
         createdBy: userId,
       },
       include: {
@@ -120,12 +124,9 @@ export class InventoryService {
       );
     }
 
-    const previousStock = product.stock;
-    const newStock = previousStock - quantity;
-
     const updatedProduct = await tx.product.update({
       where: { id: productId },
-      data: { stock: newStock },
+      data: { stock: { decrement: quantity } },
     });
 
     const log = await tx.stockLog.create({
@@ -134,8 +135,6 @@ export class InventoryService {
         type: 'out',
         quantity,
         reason: reason || 'Manual stock reduction',
-        previousStock,
-        newStock,
         createdBy: userId,
       },
     });
@@ -152,12 +151,9 @@ export class InventoryService {
       throw new NotFoundException('Product not found');
     }
 
-    const previousStock = product.stock;
-    const newStock = previousStock + quantity;
-
     const updatedProduct = await tx.product.update({
       where: { id: productId },
-      data: { stock: newStock },
+      data: { stock: { increment: quantity } },
     });
 
     const log = await tx.stockLog.create({
@@ -166,8 +162,6 @@ export class InventoryService {
         type: 'in',
         quantity,
         reason: reason || 'Stock replenishment',
-        previousStock,
-        newStock,
         createdBy: userId,
       },
     });

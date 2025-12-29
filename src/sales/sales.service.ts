@@ -3,12 +3,14 @@ import { PrismaService } from 'src/prisma.service';
 import { CreateSaleDto, CreateSaleItemDto } from './dto/create-sale.dto';
 import { Decimal } from '@prisma/client/runtime/library';
 import { InventoryService } from 'src/inventory/inventory.service';
+import { InventoryCostingService } from 'src/inventory/inventory-costing.service';
 
 @Injectable()
 export class SalesService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly inventoryService: InventoryService,
+    private readonly costingService: InventoryCostingService,
   ) {}
 
   async createSale(createSaleDto: CreateSaleDto, soldById?: number) {
@@ -40,19 +42,30 @@ export class SalesService {
         productMap.set(item.productId, product);
       }
 
-      // Calculate subtotal
+      // Calculate subtotal and track costs
       let subtotal = new Decimal(0);
-      const saleItemsData: Array<{ productId: number; quantity: number; unitPrice: Decimal; totalPrice: Decimal }> = [];
+      const saleItemsData: Array<{ 
+        productId: number; 
+        quantity: number; 
+        unitPrice: Decimal; 
+        totalPrice: Decimal;
+        unitCost: Decimal;
+        totalCost: Decimal;
+      }> = [];
 
       for (const item of items) {
         const product = productMap.get(item.productId);
         const unitPrice = product.price;
         const totalPrice = unitPrice.mul(item.quantity);
 
+        // Get actual cost using FIFO method
+        const totalCost = await this.costingService.consumeInventoryFIFO(item.productId, item.quantity);
+        const unitCost = item.quantity > 0 ? totalCost / item.quantity : 0;
+
         // Validate that selling price is not below cost price
-        if (unitPrice.lt(product.costPrice)) {
+        if (unitPrice.lt(unitCost)) {
           throw new BadRequestException(
-            `Cannot sell "${product.name}" at $${unitPrice} because it's below cost price of $${product.costPrice}`,
+            `Cannot sell "${product.name}" at $${unitPrice} because it's below actual cost price of $${unitCost.toFixed(2)}`,
           );
         }
 
@@ -62,6 +75,8 @@ export class SalesService {
           quantity: item.quantity,
           unitPrice,
           totalPrice,
+          unitCost: new Decimal(unitCost),
+          totalCost: new Decimal(totalCost),
         });
       }
 
@@ -87,6 +102,8 @@ export class SalesService {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               totalPrice: item.totalPrice,
+              unitCost: item.unitCost,
+              totalCost: item.totalCost,
             })),
           },
         },

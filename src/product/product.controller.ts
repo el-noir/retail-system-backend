@@ -28,8 +28,17 @@ export class ProductController {
   async getProducts(
     @Query('limit') limit = 10,
     @Query('offset') offset = 0,
+    @Query('categoryId') categoryId?: string,
+    @Query('search') search?: string,
+    @Query('inStock') inStock?: string,
   ) {
-    return this.productService.getProducts(+limit, +offset);
+    const categoryIdNum = categoryId ? parseInt(categoryId, 10) : undefined;
+    const inStockBool = inStock === 'true' ? true : inStock === 'false' ? false : undefined;
+    return this.productService.getProducts(+limit, +offset, {
+      categoryId: categoryIdNum,
+      search,
+      inStock: inStockBool,
+    });
   }
 
   @Get(':id')
@@ -61,6 +70,20 @@ export class ProductController {
   @UseGuards(RolesGuard)
   async getProductsByCategory(@Param('categoryId', ParseIntPipe) categoryId: number) {
     return this.productService.getProductsByCategory(categoryId);
+  }
+
+  @Get('categories/all')
+  @Roles('ADMIN', 'CASHIER', 'MANAGER')
+  @UseGuards(RolesGuard)
+  async getAllCategories() {
+    return this.productService.getAllCategories();
+  }
+
+  @Get('categories/:categoryId/summary')
+  @Roles('ADMIN', 'CASHIER', 'MANAGER')
+  @UseGuards(RolesGuard)
+  async getCategorySummary(@Param('categoryId', ParseIntPipe) categoryId: number) {
+    return this.productService.getCategorySummary(categoryId);
   }
 
   @Get(':id/suppliers')

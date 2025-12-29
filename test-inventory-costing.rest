@@ -1,0 +1,120 @@
+### Test Inventory Costing System
+
+@baseUrl = http://localhost:9000
+@token = {{$dotenv ADMIN_TOKEN}}
+
+### 1. Get existing product (mudasi - ID 3)
+GET {{baseUrl}}/product/3
+Authorization: Bearer {{token}}
+
+### 2. Check existing inventory batches
+GET {{baseUrl}}/inventory/batches/3
+Authorization: Bearer {{token}}
+
+### 3. Add new stock at different cost ($3.00 per unit)
+POST {{baseUrl}}/inventory/stock-in
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 3,
+  "quantity": 20,
+  "reason": "Restock from Supplier B at $3.00/unit",
+  "note": "Testing FIFO costing"
+}
+
+### 4. Verify weighted average updated
+GET {{baseUrl}}/product/3
+Authorization: Bearer {{token}}
+
+### Expected: costPrice should be between $2.00 and $3.00 (weighted average)
+### Formula: (18 * 2.00 + 20 * 3.00) / 38 = $2.53
+
+### 5. Make a sale of 25 units (should consume from oldest batches first)
+POST {{baseUrl}}/sales
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "items": [
+    {
+      "productId": 3,
+      "quantity": 25,
+      "unitPrice": 5.00
+    }
+  ],
+  "paymentMethod": "CASH",
+  "amountPaid": 125.00
+}
+
+### Expected FIFO consumption:
+### - 18 units from first batch @ $2.00 = $36.00
+### - 7 units from second batch @ $3.00 = $21.00
+### - Total COGS = $57.00
+### - Average cost per unit = $2.28 (not the weighted avg of $2.53!)
+
+### 6. Verify sale has actual cost data
+GET {{baseUrl}}/sales
+Authorization: Bearer {{token}}
+
+### Check latest sale - should have:
+### - items[0].unitCost = 2.28
+### - items[0].totalCost = 57.00
+### - Profit = 125.00 - 57.00 = $68.00
+
+### 7. Check profit analytics
+GET {{baseUrl}}/analytics/profit?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{token}}
+
+### Should show accurate profit based on actual COGS
+
+### 8. Check product analytics
+GET {{baseUrl}}/analytics/product/3
+Authorization: Bearer {{token}}
+
+### Should show cost using actual sale item costs
+
+### 9. Add more stock at yet another price ($2.75)
+POST {{baseUrl}}/inventory/stock-in
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 3,
+  "quantity": 15,
+  "reason": "Restock from Supplier C at $2.75/unit"
+}
+
+### 10. Verify batch consumption and weighted average
+GET {{baseUrl}}/product/3
+Authorization: Bearer {{token}}
+
+### Remaining after sale: 13 units from batch 2 + 15 units from batch 3
+### Weighted avg = (13 * 3.00 + 15 * 2.75) / 28 = $2.87
+
+### 11. Test selling below cost (should fail)
+POST {{baseUrl}}/sales
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "items": [
+    {
+      "productId": 3,
+      "quantity": 5,
+      "unitPrice": 2.00
+    }
+  ],
+  "paymentMethod": "CASH",
+  "amountPaid": 10.00
+}
+
+### Expected: 400 Bad Request - "Selling price below cost"
+### Because oldest batch now is $3.00/unit
+
+### 12. Get inventory valuation
+GET {{baseUrl}}/inventory/valuation/3
+Authorization: Bearer {{token}}
+
+### Should return total value of remaining inventory
+### = 13 * 3.00 + 15 * 2.75 = $80.25

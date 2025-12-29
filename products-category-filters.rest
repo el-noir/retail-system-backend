@@ -1,0 +1,71 @@
+### Products API with Category Filters - Test File
+
+# Get all categories for filtering
+GET http://localhost:3000/products/categories/all
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Get all products (no filters)
+GET http://localhost:3000/products?limit=20&offset=0
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Get products by category
+GET http://localhost:3000/products?categoryId=1&limit=20&offset=0
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Get products by category with search
+GET http://localhost:3000/products?categoryId=1&search=laptop&limit=20&offset=0
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Get only in-stock products
+GET http://localhost:3000/products?inStock=true&limit=20&offset=0
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Get only out-of-stock products
+GET http://localhost:3000/products?inStock=false&limit=20&offset=0
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Get products with multiple filters: category + in stock + search
+GET http://localhost:3000/products?categoryId=1&inStock=true&search=phone&limit=20&offset=0
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Get products by specific category (alternative endpoint)
+GET http://localhost:3000/products/category/1
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Get category summary with detailed statistics
+GET http://localhost:3000/products/categories/1/summary
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Search products across all categories
+GET http://localhost:3000/products?search=samsung&limit=20&offset=0
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Get specific product details
+GET http://localhost:3000/products/1
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Pagination with filters
+GET http://localhost:3000/products?categoryId=1&limit=5&offset=5
+Authorization: Bearer {{jwt_token}}

@@ -1,0 +1,71 @@
+### Analytics API with Category Filters - Test File
+
+# Get all categories for filtering
+GET http://localhost:3000/analytics/categories
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Sales Analytics - All categories
+GET http://localhost:3000/analytics/sales?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Sales Analytics - Filtered by category (replace 1 with actual category ID)
+GET http://localhost:3000/analytics/sales?startDate=2024-01-01&endDate=2024-12-31&categoryId=1
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Purchase Analytics - All categories
+GET http://localhost:3000/analytics/purchases?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Purchase Analytics - Filtered by category
+GET http://localhost:3000/analytics/purchases?startDate=2024-01-01&endDate=2024-12-31&categoryId=1
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Inventory Analytics - All categories
+GET http://localhost:3000/analytics/inventory
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Inventory Analytics - Filtered by category
+GET http://localhost:3000/analytics/inventory?categoryId=1
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Profit Analytics - All categories
+GET http://localhost:3000/analytics/profit?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Profit Analytics - Filtered by category
+GET http://localhost:3000/analytics/profit?startDate=2024-01-01&endDate=2024-12-31&categoryId=1
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Category-specific Analytics (comprehensive analytics for one category)
+GET http://localhost:3000/analytics/category/1?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Dashboard Summary (no category filter - shows overall summary)
+GET http://localhost:3000/analytics/dashboard
+Authorization: Bearer {{jwt_token}}
+
+###
+
+# Product Analytics (unchanged - for specific product analysis)
+GET http://localhost:3000/analytics/product/1?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{jwt_token}}

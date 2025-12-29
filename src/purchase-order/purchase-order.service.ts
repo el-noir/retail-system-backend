@@ -233,14 +233,11 @@ export class PurchaseOrderService {
       throw new NotFoundException('Product not found');
     }
 
-    const previousStock = product.stock;
-    const newStock = previousStock + receiveDto.receivedQty;
-
     // Update product stock AND cost price based on supplier unit price
     await this.prismaService.product.update({
       where: { id: item.productId },
       data: { 
-        stock: newStock,
+        stock: { increment: receiveDto.receivedQty },
         costPrice: item.unitPrice, // Update cost price to match supplier price
       },
     });
@@ -252,8 +249,6 @@ export class PurchaseOrderService {
         type: 'in',
         quantity: receiveDto.receivedQty,
         reason: `Purchase Order ${order.id} - Goods Received`,
-        previousStock,
-        newStock,
         createdBy: userId,
       },
     });

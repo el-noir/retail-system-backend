@@ -2,13 +2,16 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from 'src/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { SKUGeneratorService } from './sku-generator.service';
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly skuGenerator: SKUGeneratorService
+  ) {}
 
   async createProduct(createProductDto: CreateProductDto) {
-
     const productAlreadyExistsWithName = await this.prismaService.product.findFirst({
       where: { name: createProductDto.name },
     });
@@ -26,10 +29,34 @@ export class ProductService {
       throw new NotFoundException(`Category with ID ${createProductDto.categoryId} not found`);
     }
 
+    // Generate SKU if not provided
+    let sku = createProductDto.sku;
+    if (!sku) {
+      sku = await this.skuGenerator.generateSKU(
+        category.name,
+        'Generic', // Default supplier
+        'Standard' // Default variant
+      );
+    } else {
+      // Validate provided SKU format
+      if (!this.skuGenerator.isValidSKU(sku)) {
+        throw new BadRequestException('Invalid SKU format. Expected format: XXX-XXX-000-XXX');
+      }
 
+      // Check if SKU already exists
+      const existingProduct = await this.prismaService.product.findUnique({
+        where: { sku }
+      });
+      if (existingProduct) {
+        throw new BadRequestException('SKU already exists');
+      }
+    }
 
     return this.prismaService.product.create({
-      data: createProductDto,
+      data: {
+        ...createProductDto,
+        sku,
+      },
       include: {
         category: true,
       },
@@ -277,5 +304,26 @@ export class ProductService {
                (p.stock <= (p.reorderLevel || 10)) ? 'LOW_STOCK' : 'IN_STOCK',
       })),
     };
+  }
+
+  // SKU utility methods
+  async generateProductSKU(categoryName: string, supplierName?: string, variant?: string) {
+    return this.skuGenerator.generateSKU(categoryName, supplierName, variant);
+  }
+
+  parseProductSKU(sku: string) {
+    return this.skuGenerator.parseSKU(sku);
+  }
+
+  getAvailableSKUCodes() {
+    return {
+      categories: this.skuGenerator.getAvailableCategoryCodes(),
+      suppliers: this.skuGenerator.getAvailableSupplierCodes(),
+      variants: this.skuGenerator.getAvailableVariantCodes(),
+    };
+  }
+
+  validateSKU(sku: string) {
+    return this.skuGenerator.isValidSKU(sku);
   }
 }

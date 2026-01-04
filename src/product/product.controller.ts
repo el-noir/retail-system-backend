@@ -92,4 +92,40 @@ export class ProductController {
   async getProductSuppliers(@Param('id', ParseIntPipe) id: number) {
     return this.supplierService.getProductSuppliers(id);
   }
+
+  // SKU utility endpoints
+  @Get('sku/codes')
+  @Roles('ADMIN', 'MANAGER')
+  @UseGuards(RolesGuard)
+  async getAvailableSKUCodes() {
+    return this.productService.getAvailableSKUCodes();
+  }
+
+  @Get('sku/generate')
+  @Roles('ADMIN', 'MANAGER')
+  @UseGuards(RolesGuard)
+  async generateSKU(
+    @Query('category') categoryName: string,
+    @Query('supplier') supplierName?: string,
+    @Query('variant') variant?: string,
+  ) {
+    const sku = await this.productService.generateProductSKU(categoryName, supplierName, variant);
+    return { sku };
+  }
+
+  @Get('sku/parse/:sku')
+  @Roles('ADMIN', 'MANAGER', 'CASHIER')
+  @UseGuards(RolesGuard)
+  async parseSKU(@Param('sku') sku: string) {
+    const components = this.productService.parseProductSKU(sku);
+    return { sku, components };
+  }
+
+  @Get('sku/validate/:sku')
+  @Roles('ADMIN', 'MANAGER', 'CASHIER')
+  @UseGuards(RolesGuard)
+  async validateSKU(@Param('sku') sku: string) {
+    const isValid = this.productService.validateSKU(sku);
+    return { sku, isValid };
+  }
 }

@@ -18,6 +18,16 @@ export class JwtStrategy extends PassportStrategy(Strategy){
   }  
 
     async validate(payload: any){
+        // For temporary registration tokens, return the payload directly
+        if (payload.isRegistrationPending) {
+            return payload;
+        }
+        
+        // For regular authentication tokens, fetch the user from database
+        if (!payload.sub) {
+            throw new UnauthorizedException('Invalid token payload');
+        }
+        
         const user = await this.userService.getUserById(payload.sub);
 
         if(!user){

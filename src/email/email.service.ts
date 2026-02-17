@@ -71,7 +71,14 @@ export class EmailService {
             create: { email, code: otp, expiresAt },
         });
 
-        await this.sendOtpEmail(email, otp);
+        // Log OTP to console in development/production for testing
+        console.log(`🔐 OTP for ${email}: ${otp} (expires in 10 minutes)`);
+
+        // Send email asynchronously without blocking the response
+        this.sendOtpEmail(email, otp).catch(error => {
+            console.error(`Failed to send OTP email to ${email}:`, error.message);
+            // Log error but don't fail the registration
+        });
 
         return otp;
     }

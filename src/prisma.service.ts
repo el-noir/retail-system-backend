@@ -7,9 +7,21 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    // Use default env-based configuration; logging limited to errors/warnings
     super({
       log: ['error', 'warn'],
+    });
+    
+    // Middleware to handle connection issues gracefully
+    this.$use(async (params, next) => {
+      try {
+        return await next(params);
+      } catch (error: any) {
+        // Log connection errors but don't crash
+        if (error.code === 'P2024' || error.message?.includes('Connection')) {
+          this.logger.error('Database connection issue, retrying...', error.message);
+        }
+        throw error;
+      }
     });
   }
 

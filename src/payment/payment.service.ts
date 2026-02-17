@@ -49,10 +49,24 @@ export class PaymentService {
     });
 
     if (existingPayment) {
-      throw new BadRequestException('Payment already exists for this order');
+      console.log(`⚠️  Payment already exists for order ${purchaseOrderId}:`, {
+        paymentId: existingPayment.id,
+        status: existingPayment.status,
+        stripePaymentId: existingPayment.stripePaymentId,
+      });
+      
+      // Return existing payment instead of throwing error
+      return {
+        payment: existingPayment,
+        clientSecret: existingPayment.stripeClientSecret,
+        paymentIntentId: existingPayment.stripePaymentId,
+        isExisting: true,
+      };
     }
 
     // Create Stripe PaymentIntent
+    console.log(`💳 Creating payment intent for order ${order.id}, amount: $${order.totalAmount}`);
+    
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: Math.round(Number(order.totalAmount) * 100), // Convert to cents
       currency: 'usd',
@@ -65,6 +79,12 @@ export class PaymentService {
       automatic_payment_methods: {
         enabled: true,
       },
+    });
+
+    console.log(`✅ Payment intent created:`, {
+      id: paymentIntent.id,
+      amount: paymentIntent.amount,
+      status: paymentIntent.status,
     });
 
     // Create payment record

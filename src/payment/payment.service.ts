@@ -14,9 +14,8 @@ export class PaymentService {
       console.warn('⚠️  STRIPE_SECRET_KEY not found in environment variables');
     }
 
-    this.stripe = new Stripe(stripeSecretKey || 'sk_test_dummy', {
-      apiVersion: '2025-12-15.clover',
-    });
+    // Initialize Stripe without specifying API version to use the library's default
+    this.stripe = new Stripe(stripeSecretKey || 'sk_test_dummy');
   }
 
   async createPaymentIntent(purchaseOrderId: string) {

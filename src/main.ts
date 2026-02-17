@@ -11,10 +11,13 @@ async function bootstrap() {
     rawBody: true 
   });
   
+  // Parse CORS_ORIGIN as comma-separated list
+  const allowedOrigins = process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : ['http://localhost:3001'];
+  
   app.enableCors({
-    origin: [
-      process.env.CORS_ORIGIN || 'http://localhost:3001',
-    ],
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
